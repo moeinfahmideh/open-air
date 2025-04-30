@@ -1,0 +1,6 @@
+name: open-air
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+prefix: /Users/moeinfahmide/miniconda3/envs/open-air
