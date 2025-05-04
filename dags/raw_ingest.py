@@ -1,7 +1,10 @@
+from datetime import datetime, timedelta
+
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime, timedelta
+
 from open_air.ingest import airnow, openaq
+
 default = dict(
     owner="data",
     retries=2,
@@ -16,6 +19,6 @@ with DAG(
     default_args=default,
     tags=["open-air"],
 ) as dag:
-    t1 = PythonOperator(task_id="airnow_ingest", python_callable=airnow.ingest)
-    t2 = PythonOperator(task_id="openaq_ingest", python_callable=openaq.ingest)
-    t1 >> t2        # run AirNow first, then OpenAQ
+    t1 = PythonOperator(task_id="airnow_ingest", python_callable=airnow.ingest_sync)
+    t2 = PythonOperator(task_id="openaq_ingest", python_callable=openaq.ingest_sync)
+    t1 >> t2  # run AirNow first, then OpenAQ

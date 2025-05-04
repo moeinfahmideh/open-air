@@ -1,11 +1,17 @@
-import json, os, httpx, asyncio
+import asyncio
+import json
+import os
 from datetime import datetime, timezone
+
+import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
+
 from open_air.db import get_conn
 
 API = "https://www.airnowapi.org/aq/observation/latLong/current/"
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2)) # 2,4,8
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2))
 async def _fetch_one(lat: float, lon: float) -> list[dict]:
     params = {
         "format": "application/json",
@@ -20,7 +26,8 @@ async def _fetch_one(lat: float, lon: float) -> list[dict]:
         r.raise_for_status()
         return r.json()
 
-async def ingest():
+
+async def ingest_async():
     records = await _fetch_one(40.7128, -74.0060)  # NYC
     if not records:
         return 0
@@ -36,5 +43,7 @@ async def ingest():
         )
     return len(records)
 
-if __name__ == "__main__":
-    print(asyncio.run(ingest()), "airnow rows inserted")
+
+def ingest_sync():
+    """Sync wrapper for Airflow."""
+    return asyncio.run(ingest_async())

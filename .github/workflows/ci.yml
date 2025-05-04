@@ -1,5 +1,4 @@
-name: CI
-
+name: CIC
 on:
   push:
     branches: [main]

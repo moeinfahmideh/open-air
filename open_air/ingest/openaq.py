@@ -1,9 +1,15 @@
-import json, os, httpx, asyncio
+import asyncio
+import json
+import os
+
+import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
+
 from open_air.db import get_conn
 
 URL_BASE = "https://api.openaq.org/v3"
 HEADERS = {"X-API-Key": os.getenv("OPENAQ_API_KEY")}
+
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2))
 async def _get_locations(lat: float, lon: float, radius_m=25000) -> list[int]:
@@ -14,6 +20,7 @@ async def _get_locations(lat: float, lon: float, radius_m=25000) -> list[int]:
         res.raise_for_status()
         return [loc["id"] for loc in res.json()["results"]]
 
+
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2))
 async def _get_measurements(loc_id: int) -> dict:
     url = f"{URL_BASE}/locations/{loc_id}/measurements"
@@ -22,13 +29,16 @@ async def _get_measurements(loc_id: int) -> dict:
         res.raise_for_status()
         return res.json()
 
-async def ingest(lat=51.5072, lon=-0.1276):
+
+async def ingest_async(lat=51.5072, lon=-0.1276):
     loc_ids = await _get_locations(lat, lon)
     if not loc_ids:
         return 0
+
     async def gather_measurements():
         tasks = [_get_measurements(lid) for lid in loc_ids]
         return await asyncio.gather(*tasks, return_exceptions=False)
+
     bundles = await gather_measurements()
     # Flatten any empty results
     records = [row for b in bundles for row in b.get("results", [])]
@@ -44,5 +54,7 @@ async def ingest(lat=51.5072, lon=-0.1276):
         )
     return len(records)
 
-if __name__ == "__main__":
-    print(asyncio.run(ingest()), "openaq rows inserted")
+
+def ingest_sync():
+    """Sync wrapper for Airflow."""
+    return asyncio.run(ingest_async())

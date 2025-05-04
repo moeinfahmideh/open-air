@@ -1,11 +1,11 @@
 import os
-from pathlib import Path
 
-from dotenv import load_dotenv
 import psycopg
+from dotenv import load_dotenv
 
 # Load .env once at import time
 load_dotenv()
+
 
 def get_conn() -> psycopg.Connection:
     return psycopg.connect(
